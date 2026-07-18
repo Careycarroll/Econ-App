@@ -1,0 +1,10 @@
+{
+  "editor.formatOnSave": false,
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "editor.wordWrap": "on"
+  },
+  "files.trimTrailingWhitespace": false,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n"
+}
