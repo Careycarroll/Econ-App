@@ -26,7 +26,7 @@ Anchor of the app; the default landing view per ADR-0001.
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 1.1 | Embed Investing.com calendar widget in a `QWebEngineView` | | Recommended v1 approach |
+| 1.1 | Embed Investing.com calendar widget in a `QWebEngineView` | M | Recommended v1 approach |
 | 1.2 | Filter widget to U.S. only by default | | |
 | 1.3 | Filter widget to high-importance events by default | | |
 | 1.4 | Configurable timezone (default: user's local; option: ET) | | |
@@ -45,10 +45,10 @@ How the user finds a series to view.
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 2.1 | Sidebar with 12 top-level categories (Labor, Prices, GDP, etc.) | | |
-| 2.2 | Expand category → releases within that category | | |
-| 2.3 | Expand release → series within that release | | |
-| 2.4 | Flat search across all series by name or ID | | |
+| 2.1 | Sidebar with 12 top-level categories (Labor, Prices, GDP, etc.) | M | |
+| 2.2 | Expand category → releases within that category | M | |
+| 2.3 | Expand release → series within that release | M | |
+| 2.4 | Flat search across all series by name or ID | M | |
 | 2.5 | "Favorites" list for pinned series | | |
 | 2.6 | "Recently viewed" list | | |
 | 2.7 | Filter categories by relevance to user (hide categories) | | v2+ |
@@ -64,17 +64,17 @@ The primary "explore" experience.
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 3.1 | Single-series line chart via PyQtGraph | | Core |
-| 3.2 | Interactive pan and zoom | | PyQtGraph native |
-| 3.3 | Crosshair with tooltip showing date + value | | PyQtGraph native |
-| 3.4 | Date range picker (preset: 1Y, 5Y, 10Y, MAX + custom) | | |
-| 3.5 | Transform selector (Level, YoY %, MoM %, QoQ %, Annualized) | | Some transforms only apply to certain series |
+| 3.1 | Single-series line chart via PyQtGraph | M | Core |
+| 3.2 | Interactive pan and zoom | M | PyQtGraph native |
+| 3.3 | Crosshair with tooltip showing date + value | M | PyQtGraph native |
+| 3.4 | Date range picker (preset: 1Y, 5Y, 10Y, MAX + custom) | M | |
+| 3.5 | Transform selector (Level, YoY %, MoM %, QoQ %, Annualized) | M | Some transforms only apply to certain series |
 | 3.6 | Log/linear y-axis toggle | | |
 | 3.7 | Recession shading (NBER-defined) overlay toggle | | |
 | 3.8 | Grid lines toggle | | |
-| 3.9 | Chart title, subtitle, axis labels auto-populated from catalog | | |
-| 3.10 | Attribution/source line ("Source: BLS via FRED") | | |
-| 3.11 | Last-updated timestamp on chart | | |
+| 3.9 | Chart title, subtitle, axis labels auto-populated from catalog | M | |
+| 3.10 | Attribution/source line ("Source: BLS via FRED") | M | |
+| 3.11 | Last-updated timestamp on chart | M | |
 | 3.12 | Data table view (raw values) alongside chart | | |
 | 3.13 | Chart export as PNG/SVG image | | |
 | 3.14 | Data export as CSV | | |
@@ -87,16 +87,16 @@ Overlaying two or more series to see relationships.
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 4.1 | "+ Compare" button to add second series to current chart | | |
-| 4.2 | Same-unit overlay (both series on shared axis, e.g., CPI vs Core CPI) | | |
+| 4.1 | "+ Compare" button to add second series to current chart | M | |
+| 4.2 | Same-unit overlay (both series on shared axis, e.g., CPI vs Core CPI) | M | |
 | 4.3 | Rebased-to-100 mode (normalize to common start date) | | |
 | 4.4 | Dual y-axis mode (different units on left/right) | | With scaling caveat |
 | 4.5 | Scatter plot mode with correlation coefficient (r) | | |
 | 4.6 | Rolling correlation over time (e.g., 12-month rolling r) | | |
 | 4.7 | Difference/spread line (A − B) | | e.g., 10Y-2Y yield curve |
 | 4.8 | Lead/lag adjustment control (shift one series by N periods) | | v2+ likely |
-| 4.9 | Cap on overlay count (3–4 max for readability) | | UX guardrail |
-| 4.10 | Legend with color, series name, current value | | |
+| 4.9 | Cap on overlay count (3–4 max for readability) | M | UX guardrail |
+| 4.10 | Legend with color, series name, current value | M | |
 
 ---
 
@@ -106,12 +106,12 @@ Per Baumohl's *The Secrets of Economic Indicators* Ch. 1 ("The Lock-Up"). Direct
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 5.1 | Tag each series with market impact: Stocks, Bonds, Dollar, All, None | | |
+| 5.1 | Tag each series with market impact: Stocks, Bonds, Dollar, All, None | M | |
 | 5.2 | Tag each series with importance rank within its market (1–10) | | Baumohl provides rankings |
 | 5.3 | Flag "leading indicator" series | | Baumohl Table 1E |
 | 5.4 | Filter series list by market impact | | e.g., "show me all bond-sensitive indicators" |
-| 5.5 | Display market impact on chart page (badges/pills) | | |
-| 5.6 | "Core Indicators" curated view — Baumohl's top-10 stocks / top-10 bonds / top-10 dollar | | |
+| 5.5 | Display market impact on chart page (badges/pills) | M | |
+| 5.6 | "Core Indicators" curated view — Baumohl's top-10 stocks / top-10 bonds / top-10 dollar | M | |
 | 5.7 | Show "typical market reaction" note on each series page | | |
 | 5.8 | Business cycle stage tagging (recession-sensitive vs expansion-sensitive) | | |
 
@@ -123,15 +123,15 @@ Making the app teach the user, not just display data. Per UC-3.
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 6.1 | Three-tier explanations per series (sentence / paragraph / detailed) | | Format already established in FRED Core Catalog |
+| 6.1 | Three-tier explanations per series (sentence / paragraph / detailed) | M | Format already established in FRED Core Catalog |
 | 6.2 | Progressive disclosure — user chooses tier | | |
-| 6.3 | "What it measures" section | | |
+| 6.3 | "What it measures" section | M | |
 | 6.4 | "How it's constructed" section (methodology) | | |
-| 6.5 | "Why it matters" section (market/policy impact) | | |
+| 6.5 | "Why it matters" section (market/policy impact) | M | |
 | 6.6 | "Typical transform" recommendation | | |
 | 6.7 | "Common pitfalls" section | | |
 | 6.8 | "Related series" cross-links | | |
-| 6.9 | Release schedule (frequency, day/time) | | |
+| 6.9 | Release schedule (frequency, day/time) | M | |
 | 6.10 | Link to source's official release page | | |
 | 6.11 | Link to FRED series page | | |
 | 6.12 | Glossary of economic terms (accessible from any page) | | |
@@ -146,15 +146,15 @@ How the app gets and stores data from FRED.
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 7.1 | FRED API client with API key from `.env` | | |
-| 7.2 | Local SQLite cache for series observations | | |
+| 7.1 | FRED API client with API key from `.env` | M | |
+| 7.2 | Local SQLite cache for series observations | M | |
 | 7.3 | Local CSV archive of downloaded data | | Per your earlier requirement |
-| 7.4 | Manual "refresh" button per series | | |
+| 7.4 | Manual "refresh" button per series | M | |
 | 7.5 | Manual "refresh all" for catalog series | | |
 | 7.6 | Scheduled/automatic refresh (daily at 5 PM ET?) | | |
-| 7.7 | Show "last synced" timestamp | | |
+| 7.7 | Show "last synced" timestamp | M | |
 | 7.8 | Show "next expected release" (from catalog metadata) | | |
-| 7.9 | Handle FRED rate limits gracefully | | 120/min is easy for personal use |
+| 7.9 | Handle FRED rate limits gracefully | M | 120/min is easy for personal use |
 | 7.10 | Handle offline mode (use cache when no network) | | |
 | 7.11 | Data revision tracking (compare vintages) | | v2+ |
 | 7.12 | Export entire local cache for backup | | |
@@ -165,7 +165,7 @@ How the app gets and stores data from FRED.
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 8.1 | FRED API key management (`.env` file) | | |
+| 8.1 | FRED API key management (`.env` file) | M | |
 | 8.2 | API key stored in OS keyring (more secure) | | |
 | 8.3 | Preferences UI for defaults (date range, transform, timezone) | | |
 | 8.4 | Choose light/dark theme | | |
@@ -180,16 +180,16 @@ How the app gets and stores data from FRED.
 
 | # | Feature | M/S/C/W | Notes |
 |---|---|---|---|
-| 9.1 | Native PySide6 (Qt) window with menu bar | | |
-| 9.2 | Resizable panes (sidebar + main content) | | |
+| 9.1 | Native PySide6 (Qt) window with menu bar | M | |
+| 9.2 | Resizable panes (sidebar + main content) | M | |
 | 9.3 | Remembers window size/position across sessions | | |
 | 9.4 | Keyboard shortcuts (Cmd+F search, Cmd+, preferences) | | |
-| 9.5 | Cross-platform: macOS, Windows, Linux | | |
+| 9.5 | Cross-platform: macOS, Windows, Linux | M | |
 | 9.6 | Dark mode | | |
 | 9.7 | Custom app icon | | |
 | 9.8 | Splash screen on launch | | v2+ |
-| 9.9 | Loading indicators for slow operations | | |
-| 9.10 | Error/toast notifications | | |
+| 9.9 | Loading indicators for slow operations | M | |
+| 9.10 | Error/toast notifications | M | |
 
 ---
 
