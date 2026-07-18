@@ -1,6 +1,6 @@
 # ADR-0004: Technology Stack
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-07-18
 **Deciders**: Carey Carroll
 **Supersedes**: None
