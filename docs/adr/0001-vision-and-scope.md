@@ -1,7 +1,7 @@
 # ADR-0001: Vision & Scope
 
-**Status**: Proposed
-**Date**: 2026-07-10
+**Status**: Accepted
+**Date**: 2026-07-10 (drafted), 2026-07-18 (accepted)
 **Deciders**: Carey Carroll
 **Supersedes**: None
 
@@ -135,9 +135,9 @@ Rejected: significant complexity increase. Defer to future ADR if/when needed.
 
 ## Approval
 
-- [ ] Vision statement accepted as written
-- [ ] Non-goals accepted
-- [ ] Success criteria accepted
-- [ ] Ready to proceed to ADR-0002 (MVP Feature Scope)
+- [x] Vision statement accepted as written
+- [x] Non-goals accepted
+- [x] Success criteria accepted
+- [x] Ready to proceed to ADR-0002 (MVP Feature Scope)
 
-*Sign here (metaphorically) by confirming in conversation, then this ADR moves from "Proposed" to "Accepted."*
+_Sign here (metaphorically) by confirming in conversation, then this ADR moves from "Proposed" to "Accepted."_
