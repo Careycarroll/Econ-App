@@ -1,6 +1,6 @@
 # ADR-0003: Information Architecture
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2026-07-18
 **Deciders**: Carey Carroll
 **Supersedes**: None
