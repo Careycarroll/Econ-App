@@ -1,0 +1,66 @@
+[project]
+name = "econ-app"
+version = "0.1.0"
+description = "A personal desktop application for exploring and learning about U.S. economic data"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Carey Carroll" }
+]
+license = { text = "MIT" }
+keywords = ["economics", "fred", "charts", "pyside6", "desktop"]
+
+dependencies = [
+    # GUI framework
+    "PySide6>=6.6.0",
+    # Charts
+    "pyqtgraph>=0.13.3",
+    # Data manipulation
+    "pandas>=2.1.0",
+    "numpy>=1.26.0",
+    # HTTP client for FRED API
+    "httpx>=0.25.0",
+    # Config / secrets
+    "python-dotenv>=1.0.0",
+    "keyring>=24.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.1.0",
+    "pytest>=7.4.0",
+    "pytest-qt>=4.2.0",
+    "pre-commit>=3.5.0",
+]
+
+[project.scripts]
+econ-app = "econ_app.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/econ_app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = []
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
