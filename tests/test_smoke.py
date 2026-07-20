@@ -69,7 +69,6 @@ def test_toggle_sidebar_hides_and_shows(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
 
-    # Start visible (default state)
     assert window.sidebar.isHidden() is False
 
     window.toggle_sidebar()
@@ -77,3 +76,38 @@ def test_toggle_sidebar_hides_and_shows(qtbot) -> None:
 
     window.toggle_sidebar()
     assert window.sidebar.isHidden() is False
+
+
+def test_menu_bar_has_expected_menus(qtbot) -> None:
+    """The menu bar contains all 5 expected top-level menus in order."""
+    from econ_app.ui.main_window import MainWindow
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    menubar = window.menuBar()
+    titles = [action.text() for action in menubar.actions()]
+
+    assert titles == [
+        "Econ-App",
+        "View",
+        "Data",
+        "Window",
+        "Help",
+    ], f"Unexpected menu titles: {titles}"
+
+
+def test_view_menu_has_view_switch_actions(qtbot) -> None:
+    """The View menu contains the four view-switch actions."""
+    from econ_app.ui.main_window import MainWindow
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    menubar = window.menuBar()
+    view_menu = next((a.menu() for a in menubar.actions() if a.text() == "View"), None)
+    assert view_menu is not None, "View menu not found"
+
+    view_names = [a.text() for a in view_menu.actions() if not a.isSeparator() and a.text()]
+    for expected in ["Calendar", "Explorer", "Series Detail", "Core Indicators"]:
+        assert expected in view_names, f"Missing view action: {expected}"
