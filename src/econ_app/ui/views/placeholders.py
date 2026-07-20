@@ -45,24 +45,6 @@ def _make_fallback(url: str) -> QLabel:
     return label
 
 
-class MyCalendarView(BaseView):
-    """Personal FRED-backed calendar. Real implementation lands in v0.7."""
-
-    view_name = "My Calendar"
-
-    def __init__(self) -> None:
-        super().__init__()
-        layout = QVBoxLayout(self)
-        layout.addWidget(
-            _make_placeholder(
-                "My Calendar",
-                "Your curated release calendar. Coming in v0.7 — needs FRED client (v0.3) "
-                "and catalog (v0.6) to land first.",
-            )
-        )
-        self.sidebar_widget = QLabel("My Calendar filters\n(coming in v0.7)")
-
-
 class ExplorerView(BaseView):
     view_name = "Explorer"
 
