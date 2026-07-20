@@ -103,10 +103,10 @@ def test_view_switching_updates_current_view(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
 
-    # Force Calendar as starting view (settings may have persisted a different view)
-    window.switch_view("Calendar")
-    calendar_widget = window._views["Calendar"]
-    assert window.content_stack.currentWidget() is calendar_widget
+    # Force My Calendar as starting view (settings may have persisted a different view)
+    window.switch_view("My Calendar")
+    my_calendar_widget = window._views["My Calendar"]
+    assert window.content_stack.currentWidget() is my_calendar_widget
 
     # Switch to Explorer
     window.switch_view("Explorer")
@@ -131,3 +131,14 @@ def test_preferences_dialog_opens(qtbot) -> None:
     assert tabs is not None
     assert tabs.count() == 3
     assert [tabs.tabText(i) for i in range(3)] == ["General", "Appearance", "Advanced"]
+
+
+def test_market_calendar_view_instantiates(qtbot) -> None:
+    """MarketCalendarView creates without error and has a web view or fallback widget."""
+    from econ_app.ui.views.placeholders import MarketCalendarView
+
+    view = MarketCalendarView()
+    qtbot.addWidget(view)
+
+    # Either QWebEngineView loaded or the fallback label is present
+    assert view._web_view is not None
