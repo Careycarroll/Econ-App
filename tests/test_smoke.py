@@ -78,16 +78,15 @@ def test_toggle_sidebar_hides_and_shows(qtbot) -> None:
     assert window.sidebar.isHidden() is False
 
 
-def test_menu_bar_has_expected_menus(qtbot) -> None:
-    """The menu bar contains all 5 expected top-level menus in order."""
+def test_menu_bar_has_five_menus(qtbot) -> None:
+    """The menu bar contains the 5 expected top-level menus."""
     from econ_app.ui.main_window import MainWindow
 
     window = MainWindow()
     qtbot.addWidget(window)
 
     menubar = window.menuBar()
-    titles = [action.text() for action in menubar.actions()]
-
+    titles = [a.text() for a in menubar.actions()]
     assert titles == [
         "Econ-App",
         "View",
@@ -97,17 +96,38 @@ def test_menu_bar_has_expected_menus(qtbot) -> None:
     ], f"Unexpected menu titles: {titles}"
 
 
-def test_view_menu_has_view_switch_actions(qtbot) -> None:
-    """The View menu contains the four view-switch actions."""
+def test_view_switching_updates_current_view(qtbot) -> None:
+    """switch_view() changes the visible view and updates menu checkmark."""
     from econ_app.ui.main_window import MainWindow
 
     window = MainWindow()
     qtbot.addWidget(window)
 
-    menubar = window.menuBar()
-    view_menu = next((a.menu() for a in menubar.actions() if a.text() == "View"), None)
-    assert view_menu is not None, "View menu not found"
+    # Force Calendar as starting view (settings may have persisted a different view)
+    window.switch_view("Calendar")
+    calendar_widget = window._views["Calendar"]
+    assert window.content_stack.currentWidget() is calendar_widget
 
-    view_names = [a.text() for a in view_menu.actions() if not a.isSeparator() and a.text()]
-    for expected in ["Calendar", "Explorer", "Series Detail", "Core Indicators"]:
-        assert expected in view_names, f"Missing view action: {expected}"
+    # Switch to Explorer
+    window.switch_view("Explorer")
+    explorer_widget = window._views["Explorer"]
+    assert window.content_stack.currentWidget() is explorer_widget
+
+    # Menu checkmark should follow
+    assert window._view_actions["Explorer"].isChecked() is True
+
+
+def test_preferences_dialog_opens(qtbot) -> None:
+    """PreferencesDialog instantiates with 3 tabs."""
+    from econ_app.ui.preferences_dialog import PreferencesDialog
+
+    dialog = PreferencesDialog()
+    qtbot.addWidget(dialog)
+
+    # Find the QTabWidget inside
+    from PySide6.QtWidgets import QTabWidget
+
+    tabs = dialog.findChild(QTabWidget)
+    assert tabs is not None
+    assert tabs.count() == 3
+    assert [tabs.tabText(i) for i in range(3)] == ["General", "Appearance", "Advanced"]

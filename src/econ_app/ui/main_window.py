@@ -1,14 +1,10 @@
 """Main window for Econ-App.
 
-Per Issue #15, the central widget is a QSplitter with a sidebar
-(280px default, 200-400px range) and a content area.
-
-Per Issue #16, the sidebar is toggleable via a button (top-left of the
-main window). Open/closed state and width persist across sessions.
-
-Per Issue #17, the app has a menu bar with 5 menus (Econ-App/File, View,
-Data, Window, Help) and all keyboard shortcuts registered. Most action
-handlers are placeholders — real functionality lands in later issues.
+Per Issue #15: QSplitter shell.
+Per Issue #16: toggleable sidebar with persistent state.
+Per Issue #17: menu bar with 5 menus.
+Per Issue #18: view switcher with 4 placeholder views (QStackedWidget).
+Per Issue #19: Preferences dialog wired to menu action.
 """
 
 from __future__ import annotations
@@ -16,7 +12,7 @@ from __future__ import annotations
 import sys
 
 from PySide6.QtCore import QSettings, Qt
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -25,7 +21,17 @@ from PySide6.QtWidgets import (
     QMenuBar,
     QPushButton,
     QSplitter,
+    QStackedWidget,
+    QVBoxLayout,
     QWidget,
+)
+
+from econ_app.ui.preferences_dialog import PreferencesDialog
+from econ_app.ui.views.placeholders import (
+    CalendarView,
+    CoreIndicatorsView,
+    ExplorerView,
+    SeriesDetailView,
 )
 
 SIDEBAR_MIN_WIDTH = 200
@@ -38,18 +44,12 @@ TOGGLE_BUTTON_SIZE = 32
 
 
 def _todo(msg: str) -> None:
-    """Placeholder logger for menu actions not yet implemented."""
+    """Placeholder logger for actions not yet implemented."""
     print(f"[TODO] {msg}", file=sys.stderr)
 
 
 class MainWindow(QMainWindow):
-    """The application's main window.
-
-    Layout: horizontal QSplitter with sidebar (left) and content area (right).
-    Toggle button (top-left, floating) and Cmd+\\ shortcut hide/show the sidebar.
-    Menu bar (top of screen on macOS, in-window elsewhere) provides all app-level
-    actions and keyboard shortcuts.
-    """
+    """Main application window with view switcher, contextual sidebar, and menu bar."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -58,21 +58,32 @@ class MainWindow(QMainWindow):
 
         self._settings = QSettings()
 
+        # Instantiate views
+        self._views: dict[str, QWidget] = {
+            "Calendar": CalendarView(),
+            "Explorer": ExplorerView(),
+            "Series Detail": SeriesDetailView(),
+            "Core Indicators": CoreIndicatorsView(),
+        }
+        self._view_actions: dict[str, QAction] = {}
+
+        # Sidebar (with a layout so we can swap contextual content)
         self.sidebar = self._build_sidebar()
-        self.content_area = self._build_content_area()
+        # Content area is a QStackedWidget holding all views
+        self.content_stack = QStackedWidget()
+        for view in self._views.values():
+            self.content_stack.addWidget(view)
 
         self.splitter = QSplitter(Qt.Orientation.Horizontal, self)
         self.splitter.addWidget(self.sidebar)
-        self.splitter.addWidget(self.content_area)
+        self.splitter.addWidget(self.content_stack)
         self.splitter.setHandleWidth(4)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 1)
-
         self.setCentralWidget(self.splitter)
 
-        # Floating toggle button parented to the main window so it stays visible
-        # when the sidebar is hidden.
+        # Floating toggle button (parented to window so it persists when sidebar hides)
         self.toggle_button = QPushButton("\u2630", self)
         self.toggle_button.setFixedSize(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE)
         self.toggle_button.setToolTip("Toggle sidebar (Cmd+\\)")
@@ -85,10 +96,12 @@ class MainWindow(QMainWindow):
         self.toggle_button.move(8, 8)
         self.toggle_button.raise_()
 
-        # Menu bar (must be built after other widgets so actions can reference them)
+        # Menu bar
         self._build_menu_bar()
 
+        # Restore state and set initial view
         self._restore_state()
+
         self.splitter.splitterMoved.connect(self._on_splitter_moved)
 
     # ---------------------------------------------------------------- layout
@@ -101,20 +114,28 @@ class MainWindow(QMainWindow):
         sidebar.setStyleSheet(
             "#sidebar { background-color: #f0f0f0; border-right: 1px solid #d0d0d0; }"
         )
+        layout = QVBoxLayout(sidebar)
+        layout.setContentsMargins(8, TOGGLE_BUTTON_SIZE + 16, 8, 8)
+        layout.setSpacing(4)
+        sidebar.setLayout(layout)
         return sidebar
 
-    def _build_content_area(self) -> QWidget:
-        content = QFrame()
-        content.setObjectName("content")
-        content.setStyleSheet("#content { background-color: #ffffff; }")
-        return content
+    def _set_sidebar_content(self, widget: QWidget) -> None:
+        """Replace whatever is currently in the sidebar with the given widget."""
+        layout = self.sidebar.layout()
+        # Remove existing children (except keep the layout itself)
+        while layout.count():
+            item = layout.takeAt(0)
+            existing = item.widget()
+            if existing is not None:
+                existing.setParent(None)
+        layout.addWidget(widget)
+        layout.addStretch(1)
 
     # ------------------------------------------------------------- menu bar
 
     def _build_menu_bar(self) -> None:
-        """Construct the full menu bar per ADR-0003."""
         menubar: QMenuBar = self.menuBar()
-
         self._build_app_menu(menubar)
         self._build_view_menu(menubar)
         self._build_data_menu(menubar)
@@ -122,11 +143,6 @@ class MainWindow(QMainWindow):
         self._build_help_menu(menubar)
 
     def _build_app_menu(self, menubar: QMenuBar) -> None:
-        """Econ-App menu (macOS) / File menu (Win/Linux).
-
-        On macOS, actions with certain roles (About, Preferences, Quit) are
-        automatically moved to the application menu by Qt.
-        """
         menu: QMenu = menubar.addMenu("Econ-App")
 
         about_action = QAction("About Econ-App", self)
@@ -137,7 +153,7 @@ class MainWindow(QMainWindow):
         prefs_action = QAction("Preferences...", self)
         prefs_action.setShortcut(QKeySequence("Ctrl+,"))
         prefs_action.setMenuRole(QAction.MenuRole.PreferencesRole)
-        prefs_action.triggered.connect(lambda: _todo("Preferences dialog — coming in Issue #19"))
+        prefs_action.triggered.connect(self._open_preferences)
         menu.addAction(prefs_action)
 
         menu.addSeparator()
@@ -151,18 +167,20 @@ class MainWindow(QMainWindow):
     def _build_view_menu(self, menubar: QMenuBar) -> None:
         menu: QMenu = menubar.addMenu("View")
 
-        # View switching (Cmd+1..4) — placeholders until Issue #18
+        # View switching — checkable, exclusive
+        view_group = QActionGroup(self)
+        view_group.setExclusive(True)
+
         for i, name in enumerate(
             ["Calendar", "Explorer", "Series Detail", "Core Indicators"], start=1
         ):
             action = QAction(name, self)
             action.setShortcut(QKeySequence(f"Ctrl+{i}"))
             action.setCheckable(True)
-            if i == 1:  # Calendar is the default per ADR-0003
-                action.setChecked(True)
-            # Close over the name explicitly to avoid the loop-variable trap
-            action.triggered.connect(lambda _checked=False, n=name: _todo(f"Switch to {n} view"))
+            action.triggered.connect(lambda _checked=False, n=name: self.switch_view(n))
+            view_group.addAction(action)
             menu.addAction(action)
+            self._view_actions[name] = action
 
         menu.addSeparator()
 
@@ -178,24 +196,18 @@ class MainWindow(QMainWindow):
 
         menu.addSeparator()
 
-        zoom_in = QAction("Zoom In", self)
-        zoom_in.setShortcut(QKeySequence("Ctrl++"))
-        zoom_in.triggered.connect(lambda: _todo("Zoom In — coming in Issue #66"))
-        menu.addAction(zoom_in)
-
-        zoom_reset = QAction("Reset Zoom", self)
-        zoom_reset.setShortcut(QKeySequence("Ctrl+0"))
-        zoom_reset.triggered.connect(lambda: _todo("Reset Zoom — coming in Issue #66"))
-        menu.addAction(zoom_reset)
-
-        zoom_out = QAction("Zoom Out", self)
-        zoom_out.setShortcut(QKeySequence("Ctrl+-"))
-        zoom_out.triggered.connect(lambda: _todo("Zoom Out — coming in Issue #66"))
-        menu.addAction(zoom_out)
+        for label, shortcut, todo_msg in [
+            ("Zoom In", "Ctrl++", "Zoom In — coming in Issue #66"),
+            ("Reset Zoom", "Ctrl+0", "Reset Zoom — coming in Issue #66"),
+            ("Zoom Out", "Ctrl+-", "Zoom Out — coming in Issue #66"),
+        ]:
+            act = QAction(label, self)
+            act.setShortcut(QKeySequence(shortcut))
+            act.triggered.connect(lambda _checked=False, m=todo_msg: _todo(m))
+            menu.addAction(act)
 
     def _build_data_menu(self, menubar: QMenuBar) -> None:
         menu: QMenu = menubar.addMenu("Data")
-
         refresh_all = QAction("Refresh All", self)
         refresh_all.setShortcut(QKeySequence("Ctrl+R"))
         refresh_all.triggered.connect(lambda: _todo("Refresh All — coming in v0.3 (FRED client)"))
@@ -213,50 +225,63 @@ class MainWindow(QMainWindow):
 
     def _build_window_menu(self, menubar: QMenuBar) -> None:
         menu: QMenu = menubar.addMenu("Window")
-
         minimize = QAction("Minimize", self)
         minimize.setShortcut(QKeySequence("Ctrl+M"))
         minimize.triggered.connect(self.showMinimized)
         menu.addAction(minimize)
 
         zoom = QAction("Zoom", self)
-        zoom.triggered.connect(self._toggle_maximized)
+        zoom.triggered.connect(self._toggle_zoom)
         menu.addAction(zoom)
 
     def _build_help_menu(self, menubar: QMenuBar) -> None:
         menu: QMenu = menubar.addMenu("Help")
-
         fred_docs = QAction("FRED Documentation", self)
-        fred_docs.triggered.connect(
-            lambda: _todo("Open https://fred.stlouisfed.org/docs/api/fred/")
-        )
+        fred_docs.triggered.connect(lambda: _todo("Open FRED docs URL — coming later"))
         menu.addAction(fred_docs)
 
-        about_series = QAction("About FRED Series IDs", self)
-        about_series.triggered.connect(lambda: _todo("About FRED Series IDs — help content TBD"))
-        menu.addAction(about_series)
+        fred_ids = QAction("About FRED Series IDs", self)
+        fred_ids.triggered.connect(lambda: _todo("About FRED Series IDs — coming later"))
+        menu.addAction(fred_ids)
 
         menu.addSeparator()
 
-        report_issue = QAction("Report Issue", self)
-        report_issue.triggered.connect(
-            lambda: _todo("Open https://github.com/Careycarroll/Econ-App/issues")
-        )
-        menu.addAction(report_issue)
+        report = QAction("Report Issue", self)
+        report.triggered.connect(lambda: _todo("Open GitHub issue URL — coming later"))
+        menu.addAction(report)
 
     # ---------------------------------------------------------------- actions
 
     def _show_about(self) -> None:
-        """Show the About dialog. Delegates to app module for the dialog itself."""
         from econ_app.app import show_about_dialog
 
         show_about_dialog(self)
 
-    def _toggle_maximized(self) -> None:
+    def _open_preferences(self) -> None:
+        # TODO(#67): if Focus Mode is active, exit it before showing this dialog
+        dialog = PreferencesDialog(self)
+        dialog.exec()
+
+    def _toggle_zoom(self) -> None:
         if self.isMaximized():
             self.showNormal()
         else:
             self.showMaximized()
+
+    def switch_view(self, name: str) -> None:
+        """Switch the visible content view and swap sidebar content to match."""
+        if name not in self._views:
+            _todo(f"Unknown view: {name}")
+            return
+        view = self._views[name]
+        self.content_stack.setCurrentWidget(view)
+        self._set_sidebar_content(view.sidebar_widget)
+        # Update menu checkmark
+        action = self._view_actions.get(name)
+        if action is not None:
+            action.setChecked(True)
+        # Persist
+        self._settings.setValue("mainwindow/current_view", name)
 
     def toggle_sidebar(self) -> None:
         """Show or hide the sidebar; persist the new state."""
@@ -276,6 +301,14 @@ class MainWindow(QMainWindow):
             self.splitter.setSizes([width, max(0, total - width)])
             self._settings.setValue("mainwindow/sidebar_open", True)
 
+    def _on_splitter_moved(self, _pos: int, _index: int) -> None:
+        if not self.sidebar.isHidden():
+            current_width = self.splitter.sizes()[0]
+            if current_width > 0:
+                self._settings.setValue("mainwindow/sidebar_width", current_width)
+
+    # -------------------------------------------------------------- state
+
     def _restore_state(self) -> None:
         saved_width = self._settings.value(
             "mainwindow/sidebar_width", SIDEBAR_DEFAULT_WIDTH, type=int
@@ -283,13 +316,16 @@ class MainWindow(QMainWindow):
         width = max(SIDEBAR_MIN_WIDTH, min(SIDEBAR_MAX_WIDTH, saved_width))
         self.splitter.setSizes([width, WINDOW_DEFAULT_WIDTH - width])
 
-        is_open = self._settings.value("mainwindow/sidebar_open", True, type=bool)
-        self.sidebar.setVisible(is_open)
+        sidebar_open = self._settings.value("mainwindow/sidebar_open", True, type=bool)
+        if not sidebar_open:
+            self.sidebar.setVisible(False)
 
-    def _on_splitter_moved(self, _pos: int, _index: int) -> None:
-        sizes = self.splitter.sizes()
-        if sizes and sizes[0] > 0:
-            self._settings.setValue("mainwindow/sidebar_width", sizes[0])
+        # Restore last-active view (default Calendar)
+        last_view = self._settings.value("mainwindow/current_view", "Calendar", type=str)
+        if last_view not in self._views:
+            last_view = "Calendar"
+        self.switch_view(last_view)
 
     def sidebar_width(self) -> int:
-        return self.splitter.sizes()[0]
+        sizes = self.splitter.sizes()
+        return sizes[0] if sizes else 0
