@@ -49,3 +49,31 @@ def test_sidebar_min_max_constraints(qtbot) -> None:
 
     assert window.sidebar.minimumWidth() == SIDEBAR_MIN_WIDTH
     assert window.sidebar.maximumWidth() == SIDEBAR_MAX_WIDTH
+
+
+def test_toggle_button_exists(qtbot) -> None:
+    """The toggle button exists as a child of the main window."""
+    from econ_app.ui.main_window import MainWindow
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    assert window.toggle_button is not None
+    assert window.toggle_button.parent() is window
+
+
+def test_toggle_sidebar_hides_and_shows(qtbot) -> None:
+    """Calling toggle_sidebar() hides the sidebar, then shows it again."""
+    from econ_app.ui.main_window import MainWindow
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    # Start visible (default state)
+    assert window.sidebar.isHidden() is False
+
+    window.toggle_sidebar()
+    assert window.sidebar.isHidden() is True
+
+    window.toggle_sidebar()
+    assert window.sidebar.isHidden() is False
