@@ -1,26 +1,16 @@
-"""QApplication + main window entry point for Econ-App.
+"""QApplication entry point for Econ-App.
 
-Per Issue #14, this creates a blank native window. Menu bar (#17),
-sidebar layout (#15), and content (subsequent issues) are added later.
+Post-Issue-#15, MainWindow lives in econ_app.ui.main_window. This module
+is just the QApplication wiring.
 """
 
 from __future__ import annotations
 
 import sys
 
-from PySide6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtWidgets import QApplication
 
-
-class MainWindow(QMainWindow):
-    """The application's main window.
-
-    In v0.1 this is intentionally empty — just proves the shell renders.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.setWindowTitle("Econ-App")
-        self.resize(1400, 900)
+from econ_app.ui.main_window import MainWindow
 
 
 def main() -> int:
