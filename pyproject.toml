@@ -43,20 +43,54 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/econ_app"]
 
+# ------------------------------------------------------------------
+# Ruff — formatting + linting
+# ------------------------------------------------------------------
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = [
+    ".venv",
+    "build",
+    "dist",
+    "data",
+    "docs",
+    "scripts",
+]
 
 [tool.ruff.lint]
+# Sensible defaults for a Python 3.11 app project
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "UP",  # pyupgrade
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import ordering)
+    "B",    # flake8-bugbear (common bug patterns)
+    "UP",   # pyupgrade (modern syntax)
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "N",    # pep8-naming
+    "RUF",  # ruff-specific rules
 ]
-ignore = []
+ignore = [
+    "E501",  # line too long — the formatter handles this; ignore for edge cases
+    "B008",  # do not perform function calls in argument defaults (fine for Qt patterns)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",  # allow assert in tests
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+# ------------------------------------------------------------------
+# Pytest
+# ------------------------------------------------------------------
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -64,3 +98,8 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+addopts = [
+    "-ra",              # show summary of all non-passing outcomes
+    "--strict-markers", # error on unknown markers
+    "--strict-config",  # error on unknown config keys
+]
