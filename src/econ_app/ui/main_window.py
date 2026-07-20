@@ -28,9 +28,10 @@ from PySide6.QtWidgets import (
 
 from econ_app.ui.preferences_dialog import PreferencesDialog
 from econ_app.ui.views.placeholders import (
-    CalendarView,
     CoreIndicatorsView,
     ExplorerView,
+    MarketCalendarView,
+    MyCalendarView,
     SeriesDetailView,
 )
 
@@ -60,10 +61,11 @@ class MainWindow(QMainWindow):
 
         # Instantiate views
         self._views: dict[str, QWidget] = {
-            "Calendar": CalendarView(),
+            "My Calendar": MyCalendarView(),
             "Explorer": ExplorerView(),
             "Series Detail": SeriesDetailView(),
             "Core Indicators": CoreIndicatorsView(),
+            "Market Calendar": MarketCalendarView(),
         }
         self._view_actions: dict[str, QAction] = {}
 
@@ -172,7 +174,8 @@ class MainWindow(QMainWindow):
         view_group.setExclusive(True)
 
         for i, name in enumerate(
-            ["Calendar", "Explorer", "Series Detail", "Core Indicators"], start=1
+            ["My Calendar", "Explorer", "Series Detail", "Core Indicators", "Market Calendar"],
+            start=1,
         ):
             action = QAction(name, self)
             action.setShortcut(QKeySequence(f"Ctrl+{i}"))
@@ -321,9 +324,9 @@ class MainWindow(QMainWindow):
             self.sidebar.setVisible(False)
 
         # Restore last-active view (default Calendar)
-        last_view = self._settings.value("mainwindow/current_view", "Calendar", type=str)
+        last_view = self._settings.value("mainwindow/current_view", "My Calendar", type=str)
         if last_view not in self._views:
-            last_view = "Calendar"
+            last_view = "My Calendar"
         self.switch_view(last_view)
 
     def sidebar_width(self) -> int:
