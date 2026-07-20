@@ -1,7 +1,6 @@
 """Smoke tests for the econ_app package.
 
-These verify the package is installed and importable. Real tests come with
-subsequent issues as functionality is added.
+Uses pytest-qt to create the window without running the blocking event loop.
 """
 
 from __future__ import annotations
@@ -14,8 +13,13 @@ def test_package_imports() -> None:
     assert econ_app.__version__ == "0.1.0"
 
 
-def test_main_returns_zero() -> None:
-    """The main() function runs cleanly and returns 0."""
-    from econ_app.__main__ import main
+def test_main_window_creates(qtbot) -> None:
+    """MainWindow instantiates with the expected title and size."""
+    from econ_app.app import MainWindow
 
-    assert main() == 0
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    assert window.windowTitle() == "Econ-App"
+    assert window.size().width() == 1400
+    assert window.size().height() == 900
