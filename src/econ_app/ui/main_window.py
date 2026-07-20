@@ -27,11 +27,11 @@ from PySide6.QtWidgets import (
 )
 
 from econ_app.ui.preferences_dialog import PreferencesDialog
+from econ_app.ui.views.my_calendar import MyCalendarView
 from econ_app.ui.views.placeholders import (
     CoreIndicatorsView,
     ExplorerView,
     MarketCalendarView,
-    MyCalendarView,
     SeriesDetailView,
 )
 

@@ -142,3 +142,28 @@ def test_market_calendar_view_instantiates(qtbot) -> None:
 
     # Either QWebEngineView loaded or the fallback label is present
     assert view._web_view is not None
+
+
+def test_my_calendar_view_has_subview_toggle(qtbot) -> None:
+    """MyCalendarView instantiates with List and Grid sub-views."""
+    from econ_app.ui.views.my_calendar import MyCalendarView
+
+    view = MyCalendarView()
+    qtbot.addWidget(view)
+
+    # Should have a valid current sub-view (List by default on first-ever launch)
+    assert view.current_subview in ("list", "grid")
+
+
+def test_my_calendar_subview_switch(qtbot) -> None:
+    """set_subview() changes the active sub-view."""
+    from econ_app.ui.views.my_calendar import MyCalendarView
+
+    view = MyCalendarView()
+    qtbot.addWidget(view)
+
+    view.set_subview("list")
+    assert view.current_subview == "list"
+
+    view.set_subview("grid")
+    assert view.current_subview == "grid"
