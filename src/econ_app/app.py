@@ -16,6 +16,15 @@ from econ_app.ui.main_window import MainWindow
 
 def main() -> int:
     """Create the QApplication, show the main window, run the event loop."""
+    from econ_app.config import load_env
+    from econ_app.services.database import ensure_ready
+
+    # Load env before anything else so downstream code sees FRED_API_KEY
+    load_env()
+
+    # Ensure database is initialized
+    ensure_ready()
+
     app = QApplication(sys.argv)
     app.setApplicationName("Econ-App")
     app.setApplicationDisplayName("Econ-App")
