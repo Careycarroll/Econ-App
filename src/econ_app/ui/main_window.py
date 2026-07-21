@@ -32,8 +32,8 @@ from econ_app.ui.views.placeholders import (
     CoreIndicatorsView,
     ExplorerView,
     MarketCalendarView,
-    SeriesDetailView,
 )
+from econ_app.ui.views.series_detail import SeriesDetailView
 
 SIDEBAR_MIN_WIDTH = 200
 SIDEBAR_MAX_WIDTH = 400
@@ -217,7 +217,7 @@ class MainWindow(QMainWindow):
         menu.addAction(refresh_all)
 
         refresh_current = QAction("Refresh Current Series", self)
-        refresh_current.triggered.connect(lambda: _todo("Refresh Current — coming in v0.3"))
+        refresh_current.triggered.connect(self._refresh_current_series)
         menu.addAction(refresh_current)
 
         menu.addSeparator()
@@ -271,6 +271,14 @@ class MainWindow(QMainWindow):
         else:
             self.showMaximized()
 
+    def _refresh_current_series(self) -> None:
+        """Refresh whichever series the current view is displaying."""
+        current = self.content_stack.currentWidget()
+        if hasattr(current, "refresh_current"):
+            current.refresh_current()
+        else:
+            _todo("Refresh Current Series — not applicable to current view")
+
     def switch_view(self, name: str) -> None:
         """Switch the visible content view and swap sidebar content to match."""
         if name not in self._views:
@@ -285,6 +293,15 @@ class MainWindow(QMainWindow):
             action.setChecked(True)
         # Persist
         self._settings.setValue("mainwindow/current_view", name)
+
+        # Trigger lazy load for views that have data to fetch (Series Detail v0.4)
+        import logging
+
+        logging.getLogger(__name__).debug(
+            "switch_view: name=%s, has ensure_loaded=%s", name, hasattr(view, "ensure_loaded")
+        )
+        if hasattr(view, "ensure_loaded"):
+            view.ensure_loaded()
 
     def toggle_sidebar(self) -> None:
         """Show or hide the sidebar; persist the new state."""

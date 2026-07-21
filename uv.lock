@@ -212,6 +212,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.25.0" },
     { name = "keyring", specifier = ">=24.0.0" },
     { name = "numpy", specifier = ">=1.26.0" },
+    { name = "pandas", specifier = ">=2.0.0" },
     { name = "pandas", specifier = ">=2.1.0" },
     { name = "platformdirs", specifier = ">=4.0.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.5.0" },

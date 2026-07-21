@@ -13,6 +13,8 @@ keywords = ["economics", "fred", "charts", "pyside6", "desktop"]
 dependencies = [
     # GUI framework
     "PySide6>=6.6.0",
+    "pyqtgraph>=0.13.3",
+    "pandas>=2.0.0",
     # Charts
     "pyqtgraph>=0.13.3",
     # Data manipulation
