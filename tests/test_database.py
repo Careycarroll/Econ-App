@@ -49,7 +49,7 @@ def test_init_schema_idempotent(in_memory_conn) -> None:
 
 
 def test_foreign_key_cascade_on_delete(in_memory_conn) -> None:
-    """Deleting a series cascades to its observations and sync_log."""
+    """Deleting a series cascades to its observations. sync_log is NOT cascaded (audit trail)."""
     from datetime import UTC, datetime
 
     now = datetime.now(UTC).isoformat()
@@ -76,5 +76,5 @@ def test_foreign_key_cascade_on_delete(in_memory_conn) -> None:
         "SELECT COUNT(*) as n FROM sync_log WHERE series_id = ?", ("TEST1",)
     ).fetchone()["n"]
 
-    assert obs_count == 0
-    assert log_count == 0
+    assert obs_count == 0, "observations should cascade"
+    assert log_count == 1, "sync_log should persist (audit trail)"

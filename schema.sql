@@ -37,9 +37,11 @@ CREATE TABLE IF NOT EXISTS sync_log (
     synced_at TEXT NOT NULL,
     observation_count INTEGER,
     status TEXT NOT NULL,
-    error_message TEXT,
-    FOREIGN KEY (series_id) REFERENCES series(id) ON DELETE CASCADE
+    error_message TEXT
 );
+-- Note: intentionally no FK on series_id. sync_log is an audit trail and
+-- must be able to record sync attempts against series that don't exist in FRED
+-- (or against series we never successfully fetched metadata for). See ADR-0005.
 
 CREATE INDEX IF NOT EXISTS idx_sync_log_series ON sync_log(series_id, synced_at DESC);
 
