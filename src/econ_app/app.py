@@ -6,6 +6,7 @@ menu bar's About action calls.
 
 from __future__ import annotations
 
+import os
 import sys
 
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
@@ -16,6 +17,17 @@ from econ_app.ui.main_window import MainWindow
 
 def main() -> int:
     """Create the QApplication, show the main window, run the event loop."""
+    import logging
+
+    log_level = os.environ.get("ECON_APP_LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s %(levelname)-7s %(name)-40s %(message)s",
+        datefmt="%H:%M:%S",
+    )
+    # Quiet down noisy Qt internals
+    logging.getLogger("PIL").setLevel(logging.WARNING)
+
     from econ_app.config import load_env
     from econ_app.services.database import ensure_ready
 

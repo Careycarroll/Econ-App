@@ -55,16 +55,6 @@ class ExplorerView(BaseView):
         self.sidebar_widget = QLabel("Explorer navigation\n(placeholder)")
 
 
-class SeriesDetailView(BaseView):
-    view_name = "Series Detail"
-
-    def __init__(self) -> None:
-        super().__init__()
-        layout = QVBoxLayout(self)
-        layout.addWidget(_make_placeholder("Series Detail view", "Coming in v0.4"))
-        self.sidebar_widget = QLabel("Series navigation\n(placeholder)")
-
-
 class CoreIndicatorsView(BaseView):
     view_name = "Core Indicators"
 
