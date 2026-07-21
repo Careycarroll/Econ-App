@@ -1,0 +1,23 @@
+{
+  "realtime_start": "2024-06-15",
+  "realtime_end": "2024-06-15",
+  "seriess": [
+    {
+      "id": "CPIAUCSL",
+      "realtime_start": "2024-06-15",
+      "realtime_end": "2024-06-15",
+      "title": "Consumer Price Index for All Urban Consumers: All Items in U.S. City Average",
+      "observation_start": "1947-01-01",
+      "observation_end": "2024-05-01",
+      "frequency": "Monthly",
+      "frequency_short": "M",
+      "units": "Index 1982-1984=100",
+      "units_short": "Index 1982-1984=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "seasonal_adjustment_short": "SA",
+      "last_updated": "2024-06-12 07:41:03-05",
+      "popularity": 94,
+      "notes": "The Consumer Price Index for All Urban Consumers: All Items (CPIAUCSL) is a price index of a basket of goods and services paid by urban consumers. Percent changes in the price index measure the inflation rate between any two time periods."
+    }
+  ]
+}
