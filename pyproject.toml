@@ -23,6 +23,7 @@ dependencies = [
     # Config / secrets
     "python-dotenv>=1.0.0",
     "keyring>=24.0.0",
+    "platformdirs>=4.0.0",
 ]
 
 [project.optional-dependencies]
