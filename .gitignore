@@ -130,3 +130,9 @@ notebooks/
 tmp/
 exports/
 output/
+
+# Local Python environment
+.venv/
+
+# Large FRED metadata dump/cache outputs
+data/fred_metadata/
