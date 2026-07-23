@@ -29,7 +29,9 @@ def test_schema_creates_expected_tables(in_memory_conn) -> None:
         "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
     ).fetchall()
     names = {r["name"] for r in rows}
-    assert {"series", "observations", "sync_log", "_schema_version"}.issubset(names)
+    assert {"series", "observations", "sync_log", "fred_core_series", "_schema_version"}.issubset(
+        names
+    )
 
 
 def test_schema_version_recorded(in_memory_conn) -> None:
