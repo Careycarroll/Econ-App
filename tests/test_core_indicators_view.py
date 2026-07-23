@@ -1,4 +1,4 @@
-"""Tests for the Core Indicators view.
+"""Tests for the Core Indicators view with sidebar filter chips.
 
 Uses in-memory SQLite seeded with a small fixture so the view can be exercised
 without hitting the real database or the FRED API.
@@ -93,6 +93,32 @@ SAMPLE_ROWS = [
         "economist_relevance": None,
         "seeded_at": "2026-07-23T00:00:00+00:00",
     },
+    {
+        "series_id": "MORTGAGE30US",
+        "title": "30-Year Fixed Rate Mortgage Average in the United States",
+        "app_core_status": "Core",
+        "review_status": "accepted_core_seed",
+        "seed_source": "curated_core_series",
+        "suggested_series_core_status": "Core",
+        "suggested_core_domain": "Housing",
+        "suggested_market_relevance": "High",
+        "suggested_economist_relevance": "High",
+        "candidate_core_score": 145,
+        "candidate_core_reasons": "benchmark_core_series_id",
+        "popularity": 98,
+        "frequency": "Weekly, Ending Thursday",
+        "units": "Percent",
+        "seasonal_adjustment": "Not Seasonally Adjusted",
+        "observation_start": "1971-04-02",
+        "observation_end": "2026-07-16",
+        "last_updated_fred": "2026-07-16 11:03:15-05",
+        "release_ids": "190",
+        "release_names": "Primary Mortgage Market Survey",
+        "series_core_status": "Core",
+        "market_relevance": "High",
+        "economist_relevance": "High",
+        "seeded_at": "2026-07-23T00:00:00+00:00",
+    },
 ]
 
 
@@ -115,11 +141,7 @@ def in_memory_conn():
 
 
 def _install_fake_connection(monkeypatch, conn):
-    """Route the view's get_connection() calls to our in-memory connection.
-
-    Wraps in a shim so `with get_connection() as c:` works without closing
-    the shared in-memory DB.
-    """
+    """Route the view's get_connection() calls to our in-memory connection."""
     from econ_app.ui.views import core_indicators as view_module
 
     class _ConnShim:
@@ -132,9 +154,35 @@ def _install_fake_connection(monkeypatch, conn):
     monkeypatch.setattr(view_module, "get_connection", lambda: _ConnShim())
 
 
-def test_core_indicators_view_loads_rows(qtbot, monkeypatch, in_memory_conn) -> None:
+def _isolate_settings(monkeypatch, tmp_path):
+    """Point QSettings at a temp file so chip persistence doesn't leak between tests."""
+    from PySide6.QtCore import QCoreApplication, QSettings
+
+    QCoreApplication.setOrganizationName("EconAppTests")
+    QCoreApplication.setApplicationName("EconAppTests")
+    QSettings.setDefaultFormat(QSettings.Format.IniFormat)
+    QSettings.setPath(
+        QSettings.Format.IniFormat,
+        QSettings.Scope.UserScope,
+        str(tmp_path),
+    )
+
+
+def _visible_series_ids(view) -> list[str]:
+    ids: list[str] = []
+    for row in range(view.table.rowCount()):
+        if view.table.isRowHidden(row):
+            continue
+        item = view.table.item(row, 0)
+        if item is not None:
+            ids.append(item.text())
+    return ids
+
+
+def test_core_indicators_view_loads_rows(qtbot, monkeypatch, tmp_path, in_memory_conn) -> None:
     """View pulls seeded rows out of SQLite and renders them in the table."""
     _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
 
     from econ_app.ui.views.core_indicators import CoreIndicatorsView
 
@@ -145,16 +193,17 @@ def test_core_indicators_view_loads_rows(qtbot, monkeypatch, in_memory_conn) -> 
     assert view._loaded is True
     assert view.table.rowCount() == len(SAMPLE_ROWS)
 
-    displayed_ids = {view.table.item(row, 0).text() for row in range(view.table.rowCount())}
+    displayed_ids = set(_visible_series_ids(view))
     assert displayed_ids == {r["series_id"] for r in SAMPLE_ROWS}
 
+    assert "Showing" in view.summary_label.text()
     assert "Core" in view.summary_label.text()
-    assert "Candidate-Core" in view.summary_label.text()
 
 
-def test_core_indicators_search_filters_rows(qtbot, monkeypatch, in_memory_conn) -> None:
+def test_core_indicators_search_filters_rows(qtbot, monkeypatch, tmp_path, in_memory_conn) -> None:
     """Typing in the search box hides non-matching rows."""
     _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
 
     from econ_app.ui.views.core_indicators import CoreIndicatorsView
 
@@ -163,18 +212,19 @@ def test_core_indicators_search_filters_rows(qtbot, monkeypatch, in_memory_conn)
     view.ensure_loaded()
 
     view.search_box.setText("unemployment")
+    assert _visible_series_ids(view) == ["UNRATE"]
 
-    visible_ids: list[str] = []
-    for row in range(view.table.rowCount()):
-        if not view.table.isRowHidden(row):
-            visible_ids.append(view.table.item(row, 0).text())
-
-    assert visible_ids == ["UNRATE"]
+    # Clearing search restores all rows.
+    view.search_box.setText("")
+    assert set(_visible_series_ids(view)) == {r["series_id"] for r in SAMPLE_ROWS}
 
 
-def test_core_indicators_open_selected_emits_signal(qtbot, monkeypatch, in_memory_conn) -> None:
-    """Opening a selected series emits series_requested with its FRED ID."""
+def test_core_indicators_facet_chips_exist_for_all_groups(
+    qtbot, monkeypatch, tmp_path, in_memory_conn
+) -> None:
+    """All four facet groups get chips built from the loaded rows."""
     _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
 
     from econ_app.ui.views.core_indicators import CoreIndicatorsView
 
@@ -182,7 +232,152 @@ def test_core_indicators_open_selected_emits_signal(qtbot, monkeypatch, in_memor
     qtbot.addWidget(view)
     view.ensure_loaded()
 
-    # Find and select the UNRATE row.
+    # Core status: Core + Candidate-Core.
+    core_status_chips = view._chips["app_core_status"]
+    assert set(core_status_chips.keys()) == {"Core", "Candidate-Core"}
+
+    # Domains from the sample rows.
+    domain_chips = view._chips["suggested_core_domain"]
+    assert set(domain_chips.keys()) == {
+        "Inflation/Prices",
+        "Labor",
+        "Money/Credit/Banking",
+        "Housing",
+    }
+
+    # Market and economist relevance.
+    market_chips = view._chips["suggested_market_relevance"]
+    assert set(market_chips.keys()) == {"High", "Medium"}
+
+    econ_chips = view._chips["suggested_economist_relevance"]
+    assert set(econ_chips.keys()) == {"High"}
+
+
+def test_core_indicators_chip_multi_select_or_within_group(
+    qtbot, monkeypatch, tmp_path, in_memory_conn
+) -> None:
+    """Selecting multiple chips in one facet ORs within the group."""
+    _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
+
+    from econ_app.ui.views.core_indicators import CoreIndicatorsView
+
+    view = CoreIndicatorsView()
+    qtbot.addWidget(view)
+    view.ensure_loaded()
+
+    domain_chips = view._chips["suggested_core_domain"]
+    domain_chips["Housing"].setChecked(True)
+    domain_chips["Labor"].setChecked(True)
+
+    visible = set(_visible_series_ids(view))
+    assert visible == {"UNRATE", "MORTGAGE30US"}
+
+
+def test_core_indicators_chip_and_across_groups(
+    qtbot, monkeypatch, tmp_path, in_memory_conn
+) -> None:
+    """Selections from different facet groups AND together."""
+    _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
+
+    from econ_app.ui.views.core_indicators import CoreIndicatorsView
+
+    view = CoreIndicatorsView()
+    qtbot.addWidget(view)
+    view.ensure_loaded()
+
+    view._chips["app_core_status"]["Core"].setChecked(True)
+    view._chips["suggested_market_relevance"]["High"].setChecked(True)
+
+    # All Core rows are High market relevance in the sample; DRCCLACBS is Medium.
+    visible = set(_visible_series_ids(view))
+    assert visible == {"CPIAUCSL", "UNRATE", "MORTGAGE30US"}
+
+
+def test_core_indicators_chips_and_search_compose(
+    qtbot, monkeypatch, tmp_path, in_memory_conn
+) -> None:
+    """Search + chip filters compose (both must pass)."""
+    _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
+
+    from econ_app.ui.views.core_indicators import CoreIndicatorsView
+
+    view = CoreIndicatorsView()
+    qtbot.addWidget(view)
+    view.ensure_loaded()
+
+    view._chips["app_core_status"]["Core"].setChecked(True)
+    view.search_box.setText("mortgage")
+
+    assert _visible_series_ids(view) == ["MORTGAGE30US"]
+
+
+def test_core_indicators_chip_counts_reflect_visible_rows(
+    qtbot, monkeypatch, tmp_path, in_memory_conn
+) -> None:
+    """Chip labels show live counts based on the currently visible rows."""
+    _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
+
+    from econ_app.ui.views.core_indicators import CoreIndicatorsView
+
+    view = CoreIndicatorsView()
+    qtbot.addWidget(view)
+    view.ensure_loaded()
+
+    # No filters: Core status counts should equal totals in the sample.
+    core_chip = view._chips["app_core_status"]["Core"]
+    candidate_chip = view._chips["app_core_status"]["Candidate-Core"]
+    assert "(3)" in core_chip.text()
+    assert "(1)" in candidate_chip.text()
+
+    # Narrow to Housing only. Now Core visible count should be 1, Candidate-Core 0.
+    view._chips["suggested_core_domain"]["Housing"].setChecked(True)
+    assert "(1)" in view._chips["app_core_status"]["Core"].text()
+    assert "(0)" in view._chips["app_core_status"]["Candidate-Core"].text()
+
+
+def test_core_indicators_clear_filters_resets_selections(
+    qtbot, monkeypatch, tmp_path, in_memory_conn
+) -> None:
+    """Clear Filters resets every chip and shows all rows again."""
+    _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
+
+    from econ_app.ui.views.core_indicators import CoreIndicatorsView
+
+    view = CoreIndicatorsView()
+    qtbot.addWidget(view)
+    view.ensure_loaded()
+
+    view._chips["app_core_status"]["Core"].setChecked(True)
+    view._chips["suggested_core_domain"]["Housing"].setChecked(True)
+    assert view.clear_filters_button.isHidden() is False
+    assert _visible_series_ids(view) == ["MORTGAGE30US"]
+
+    view.clear_filters_button.click()
+
+    assert view.clear_filters_button.isHidden() is True
+    for facet_values in view._selected.values():
+        assert facet_values == set()
+    assert set(_visible_series_ids(view)) == {r["series_id"] for r in SAMPLE_ROWS}
+
+
+def test_core_indicators_open_selected_emits_signal(
+    qtbot, monkeypatch, tmp_path, in_memory_conn
+) -> None:
+    """Opening a selected series emits series_requested with its FRED ID."""
+    _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
+
+    from econ_app.ui.views.core_indicators import CoreIndicatorsView
+
+    view = CoreIndicatorsView()
+    qtbot.addWidget(view)
+    view.ensure_loaded()
+
     target_row = None
     for row in range(view.table.rowCount()):
         if view.table.item(row, 0).text() == "UNRATE":
@@ -200,10 +395,11 @@ def test_core_indicators_open_selected_emits_signal(qtbot, monkeypatch, in_memor
 
 
 def test_main_window_core_indicator_selection_loads_series(
-    qtbot, monkeypatch, in_memory_conn
+    qtbot, monkeypatch, tmp_path, in_memory_conn
 ) -> None:
     """MainWindow routes series_requested to Series Detail's load_series."""
     _install_fake_connection(monkeypatch, in_memory_conn)
+    _isolate_settings(monkeypatch, tmp_path)
 
     from econ_app.ui.main_window import MainWindow
 
@@ -229,8 +425,6 @@ def test_main_window_core_indicator_selection_loads_series(
 
         core_view._open_selected_series()
 
-        # Should now be on Series Detail view.
         detail_view = window._views["Series Detail"]
         assert window.content_stack.currentWidget() is detail_view
-        # And it should have attempted to load the requested series ID.
         assert detail_view._series_id == "CPIAUCSL"
