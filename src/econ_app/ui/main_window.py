@@ -27,9 +27,9 @@ from PySide6.QtWidgets import (
 )
 
 from econ_app.ui.preferences_dialog import PreferencesDialog
+from econ_app.ui.views.core_indicators import CoreIndicatorsView
 from econ_app.ui.views.my_calendar import MyCalendarView
 from econ_app.ui.views.placeholders import (
-    CoreIndicatorsView,
     ExplorerView,
     MarketCalendarView,
 )
@@ -68,6 +68,7 @@ class MainWindow(QMainWindow):
             "Market Calendar": MarketCalendarView(),
         }
         self._view_actions: dict[str, QAction] = {}
+        self._wire_view_signals()
 
         # Sidebar (with a layout so we can swap contextual content)
         self.sidebar = self._build_sidebar()
@@ -105,6 +106,19 @@ class MainWindow(QMainWindow):
         self._restore_state()
 
         self.splitter.splitterMoved.connect(self._on_splitter_moved)
+
+    def _wire_view_signals(self) -> None:
+        """Connect cross-view signals after views are instantiated."""
+        core_view = self._views.get("Core Indicators")
+        if hasattr(core_view, "series_requested"):
+            core_view.series_requested.connect(self._open_series_from_catalog)
+
+    def _open_series_from_catalog(self, series_id: str) -> None:
+        """Open a selected catalog series in Series Detail."""
+        self.switch_view("Series Detail")
+        series_detail = self._views.get("Series Detail")
+        if hasattr(series_detail, "load_series"):
+            series_detail.load_series(series_id)
 
     # ---------------------------------------------------------------- layout
 
@@ -278,6 +292,13 @@ class MainWindow(QMainWindow):
             current.refresh_current()
         else:
             _todo("Refresh Current Series — not applicable to current view")
+
+    def _open_series_from_core_indicators(self, series_id: str) -> None:
+        """Switch to Series Detail and load the requested FRED series."""
+        self.switch_view("Series Detail")
+        detail_view = self._views.get("Series Detail")
+        if detail_view is not None and hasattr(detail_view, "load_series"):
+            detail_view.load_series(series_id)
 
     def switch_view(self, name: str) -> None:
         """Switch the visible content view and swap sidebar content to match."""
