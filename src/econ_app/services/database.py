@@ -60,3 +60,9 @@ def ensure_ready() -> None:
     """Call once on app startup to ensure the database exists and is initialized."""
     with get_connection() as conn:
         init_schema(conn)
+
+        # Keep the small committed FRED core-series catalog available locally.
+        # Import is idempotent and does not call the FRED API.
+        from econ_app.services.series_catalog import seed_core_series
+
+        seed_core_series(conn)

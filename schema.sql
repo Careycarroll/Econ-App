@@ -45,6 +45,42 @@ CREATE TABLE IF NOT EXISTS sync_log (
 
 CREATE INDEX IF NOT EXISTS idx_sync_log_series ON sync_log(series_id, synced_at DESC);
 
+CREATE TABLE IF NOT EXISTS fred_core_series (
+    series_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    app_core_status TEXT NOT NULL,
+    review_status TEXT NOT NULL,
+    seed_source TEXT NOT NULL,
+    suggested_series_core_status TEXT,
+    suggested_core_domain TEXT,
+    suggested_market_relevance TEXT,
+    suggested_economist_relevance TEXT,
+    candidate_core_score INTEGER,
+    candidate_core_reasons TEXT,
+    popularity INTEGER,
+    frequency TEXT,
+    units TEXT,
+    seasonal_adjustment TEXT,
+    observation_start TEXT,
+    observation_end TEXT,
+    last_updated_fred TEXT,
+    release_ids TEXT,
+    release_names TEXT,
+    series_core_status TEXT,
+    market_relevance TEXT,
+    economist_relevance TEXT,
+    seeded_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_fred_core_series_status
+    ON fred_core_series(app_core_status, review_status);
+
+CREATE INDEX IF NOT EXISTS idx_fred_core_series_domain
+    ON fred_core_series(suggested_core_domain);
+
+CREATE INDEX IF NOT EXISTS idx_fred_core_series_popularity
+    ON fred_core_series(popularity DESC);
+
 CREATE TABLE IF NOT EXISTS _schema_version (
     version INTEGER NOT NULL,
     applied_at TEXT NOT NULL
