@@ -1,11 +1,11 @@
-"""View classes for the main content area.
+"""Placeholder / third-party embedded views.
 
-- MyCalendarView (default, ⌘1): FRED-backed personal calendar. Placeholder until
-  v0.3 (FRED client) and v0.7 (real implementation) land.
-- ExplorerView (⌘2): browse the FRED catalog. Placeholder until v0.5.
-- SeriesDetailView (⌘3): single-series chart with controls. Placeholder until v0.4.
-- CoreIndicatorsView (⌘4): Baumohl-based curated list. Placeholder until v0.6.
-- MarketCalendarView (⌘5): Investing.com Economic Calendar widget. Live now.
+- ExplorerView (Cmd+2): browse the FRED catalog. Placeholder until v0.5.
+- MarketCalendarView (Cmd+5): Investing.com Economic Calendar widget. Live.
+
+v0.6 cleanup: CoreIndicatorsView and SeriesDetailView placeholder classes
+were removed because real implementations live in core_indicators.py and
+series_detail.py respectively.
 """
 
 from __future__ import annotations
@@ -53,16 +53,6 @@ class ExplorerView(BaseView):
         layout = QVBoxLayout(self)
         layout.addWidget(_make_placeholder("Explorer view", "Coming in v0.5"))
         self.sidebar_widget = QLabel("Explorer navigation\n(placeholder)")
-
-
-class CoreIndicatorsView(BaseView):
-    view_name = "Core Indicators"
-
-    def __init__(self) -> None:
-        super().__init__()
-        layout = QVBoxLayout(self)
-        layout.addWidget(_make_placeholder("Core Indicators view", "Coming in v0.6"))
-        self.sidebar_widget = QLabel("Market filters\n(placeholder)")
 
 
 class MarketCalendarView(BaseView):
