@@ -2,6 +2,9 @@
 
 Displays time-series observations with a date-aware x-axis and a numeric y-axis.
 Handles missing values (gaps in the line) and empty state.
+
+v0.6 fix: use pyqtgraph's real DateAxisItem so the x-axis renders dates
+instead of Unix timestamps in scientific notation.
 """
 
 from __future__ import annotations
@@ -9,29 +12,11 @@ from __future__ import annotations
 from datetime import datetime
 
 import pyqtgraph as pg
+from pyqtgraph import DateAxisItem
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel, QStackedLayout, QWidget
 
 from econ_app.services.models import Observation, SeriesMetadata
-
-
-class DateAxisItem(pg.AxisItem):
-    """Custom axis that displays timestamps as human-readable dates."""
-
-    def tickStrings(self, values: list[float], scale: float, spacing: float) -> list[str]:  # noqa: N802 (PyQtGraph override)
-        # values are timestamps (seconds since epoch)
-        strings = []
-        for v in values:
-            try:
-                dt = datetime.fromtimestamp(v)
-                # Show year only for widely-spaced ticks, else year-month
-                if spacing >= 365 * 24 * 60 * 60:
-                    strings.append(dt.strftime("%Y"))
-                else:
-                    strings.append(dt.strftime("%Y-%m"))
-            except (ValueError, OverflowError):
-                strings.append("")
-        return strings
 
 
 class LineChart(QWidget):
@@ -45,8 +30,10 @@ class LineChart(QWidget):
         # Configure PyQtGraph global defaults for this chart
         pg.setConfigOptions(antialias=True, background="w", foreground="#333")
 
-        # The actual plot widget with custom date axis
-        self._plot_widget = pg.PlotWidget(axisItems={"bottom": DateAxisItem(orientation="bottom")})
+        # The plot widget with a date-aware bottom axis.
+        # DateAxisItem expects x values as Unix timestamps (seconds since epoch).
+        date_axis = DateAxisItem(orientation="bottom")
+        self._plot_widget = pg.PlotWidget(axisItems={"bottom": date_axis})
         self._plot_widget.showGrid(x=True, y=True, alpha=0.2)
         self._plot_widget.setMouseEnabled(x=True, y=True)
         self._plot_widget.getPlotItem().setMenuEnabled(False)
@@ -107,15 +94,27 @@ class LineChart(QWidget):
         values: list[float] = []
 
         for obs in observations:
+            ts = datetime.combine(obs.date, datetime.min.time()).timestamp()
             if obs.is_missing or obs.value is None:
-                # Gap: NaN causes PyQtGraph to break the line here
-                timestamps.append(datetime.combine(obs.date, datetime.min.time()).timestamp())
+                timestamps.append(ts)
                 values.append(float("nan"))
             else:
-                timestamps.append(datetime.combine(obs.date, datetime.min.time()).timestamp())
+                timestamps.append(ts)
                 values.append(obs.value)
 
+        # Cache for crosshair lookup
+        self._observation_dates = [obs.date for obs in observations]
+        self._observation_values = [obs.value for obs in observations]
+
         self._plot_widget.clear()
+        # Re-add the crosshair overlay items after clear
+        self._plot_widget.addItem(self._crosshair_v, ignoreBounds=True)
+        self._plot_widget.addItem(self._crosshair_h, ignoreBounds=True)
+        self._plot_widget.addItem(self._crosshair_label, ignoreBounds=True)
+        self._crosshair_v.hide()
+        self._crosshair_h.hide()
+        self._crosshair_label.hide()
+
         self._plot_widget.plot(
             timestamps,
             values,
@@ -156,7 +155,7 @@ class LineChart(QWidget):
             metadata.units_short or metadata.units,
             color="#555",
         )
-        self._plot_widget.setLabel("bottom", "Date", color="#555")
+        # DateAxisItem renders human-readable dates directly; no explicit bottom label needed.
 
     def _on_mouse_moved(self, event) -> None:
         pos = event[0]

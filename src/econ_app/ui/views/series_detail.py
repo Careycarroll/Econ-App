@@ -2,7 +2,11 @@
 
 Displays a single FRED series with metadata, chart, controls, attribution, and
 last-synced info. In v0.4, the series is hardcoded to CPIAUCSL. Explorer (v0.5)
-will drive series selection.
+and Core Indicators (v0.6) drive series selection.
+
+v0.6 fix: adds a visible "Back to Core Indicators" button and a back_requested
+signal that MainWindow connects to switch views. Previously the only way back
+was Cmd+4 or the macOS menu bar, neither obvious.
 """
 
 from __future__ import annotations
@@ -10,7 +14,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QSettings, Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
@@ -50,6 +54,10 @@ class SeriesDetailView(BaseView):
 
     view_name = "Series Detail"
 
+    # Emitted when the user clicks "Back to Core Indicators".
+    # MainWindow connects this to switch views.
+    back_requested = Signal()
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -66,6 +74,29 @@ class SeriesDetailView(BaseView):
         inner_layout = QVBoxLayout(self._inner)
         inner_layout.setContentsMargins(24, 24, 24, 24)
         inner_layout.setSpacing(16)
+
+        # 0. Back-to-Core-Indicators button row (v0.6 UX fix)
+        back_row = QHBoxLayout()
+        back_row.setContentsMargins(0, 0, 0, 0)
+        back_row.setSpacing(0)
+        self.back_button = QPushButton("← Back to Core Indicators")
+        self.back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.back_button.setStyleSheet(
+            "QPushButton {"
+            " padding: 4px 10px;"
+            " border: 1px solid #c0c0c0;"
+            " border-radius: 4px;"
+            " background: #f5f5f5;"
+            " color: #333;"
+            " font-size: 12px;"
+            "}"
+            "QPushButton:hover { background: #e8e8e8; }"
+            "QPushButton:pressed { background: #dcdcdc; }"
+        )
+        self.back_button.clicked.connect(self.back_requested.emit)
+        back_row.addWidget(self.back_button)
+        back_row.addStretch(1)
+        inner_layout.addLayout(back_row)
 
         # 1. Header block
         self._title_label = QLabel("")
@@ -258,7 +289,6 @@ class SeriesDetailView(BaseView):
         """Set the chart's x-axis range according to self._current_range."""
         if not self._observations:
             return
-
         now = datetime.now().timestamp()
         if self._current_range == "1Y":
             start = datetime.now().replace(year=datetime.now().year - 1).timestamp()
@@ -266,17 +296,16 @@ class SeriesDetailView(BaseView):
             start = datetime.now().replace(year=datetime.now().year - 5).timestamp()
         elif self._current_range == "10Y":
             start = datetime.now().replace(year=datetime.now().year - 10).timestamp()
-        else:  # MAX
+        else:
+            # MAX or unknown -> autoRange
             self._chart._plot_widget.getViewBox().autoRange()
             return
-
         self._chart._plot_widget.setXRange(start, now, padding=0.02)
 
     def _open_custom_range_dialog(self) -> None:
         """Show a modal dialog to pick a custom date range."""
         if not self._observations:
             return
-
         dialog = QDialog(self)
         dialog.setWindowTitle("Custom date range")
         dialog.setModal(True)
@@ -371,6 +400,7 @@ class SeriesDetailView(BaseView):
 
         if self._current_range in self._preset_buttons:
             self._preset_buttons[self._current_range].setChecked(True)
+
         for i in range(self._transform_combo.count()):
             if self._transform_combo.itemData(i) == self._current_transform:
                 self._transform_combo.blockSignals(True)
@@ -431,20 +461,19 @@ def _format_relative(dt: datetime) -> str:
     now = datetime.now(UTC)
     delta = now - dt
     seconds = int(delta.total_seconds())
-
     if seconds < 60:
         return "just now"
-    if seconds < 3600:
-        minutes = seconds // 60
+    minutes = seconds // 60
+    if minutes < 60:
         return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
-    if seconds < 86400:
-        hours = seconds // 3600
+    hours = minutes // 60
+    if hours < 24:
         return f"{hours} hour{'s' if hours != 1 else ''} ago"
-    if seconds < 86400 * 30:
-        days = seconds // 86400
+    days = hours // 24
+    if days < 30:
         return f"{days} day{'s' if days != 1 else ''} ago"
-    if seconds < 86400 * 365:
-        months = seconds // (86400 * 30)
+    months = days // 30
+    if months < 12:
         return f"{months} month{'s' if months != 1 else ''} ago"
-    years = seconds // (86400 * 365)
+    years = months // 12
     return f"{years} year{'s' if years != 1 else ''} ago"
