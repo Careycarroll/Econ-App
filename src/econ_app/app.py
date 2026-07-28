@@ -6,7 +6,6 @@ menu bar's About action calls.
 
 from __future__ import annotations
 
-import os
 import sys
 
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
@@ -17,16 +16,20 @@ from econ_app.ui.main_window import MainWindow
 
 def main() -> int:
     """Create the QApplication, show the main window, run the event loop."""
+    # Configure structured logging first so early failures land in the log file.
+    from econ_app.services.logging_setup import configure_logging
+
+    log_path = configure_logging()
+
+    # Install crash handlers before creating QApplication so any startup
+    # exceptions are captured with a traceback rather than lost to Qt.
+    from econ_app.services.error_handling import install_handlers
+
+    install_handlers()
+
     import logging
 
-    log_level = os.environ.get("ECON_APP_LOG_LEVEL", "INFO").upper()
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s %(levelname)-7s %(name)-40s %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    # Quiet down noisy Qt internals
-    logging.getLogger("PIL").setLevel(logging.WARNING)
+    logging.getLogger(__name__).info("Econ-App starting. Log file: %s", log_path)
 
     from econ_app.config import load_env
     from econ_app.services.database import ensure_ready
