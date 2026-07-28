@@ -264,6 +264,12 @@ class MainWindow(QMainWindow):
         report.triggered.connect(lambda: _todo("Open GitHub issue URL — coming later"))
         menu.addAction(report)
 
+        menu.addSeparator()
+
+        show_logs = QAction("Show Log Folder", self)
+        show_logs.triggered.connect(self._show_log_folder)
+        menu.addAction(show_logs)
+
     # ---------------------------------------------------------------- actions
 
     def _show_about(self) -> None:
@@ -367,6 +373,22 @@ class MainWindow(QMainWindow):
         if last_view not in self._views:
             last_view = "My Calendar"
         self.switch_view(last_view)
+
+    def _show_log_folder(self) -> None:
+        """Reveal the Econ-App log folder in the OS file manager."""
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+
+        from econ_app.services.logging_setup import get_log_dir
+
+        log_dir = get_log_dir()
+        opened = QDesktopServices.openUrl(QUrl.fromLocalFile(str(log_dir)))
+        if not opened:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Could not open log folder in file manager: %s", log_dir
+            )
 
     def sidebar_width(self) -> int:
         sizes = self.splitter.sizes()
